@@ -5,6 +5,11 @@ const NORMALIZED_COORDINATE_COUNT = HAND_LANDMARK_COUNT * 2;
 const K_NEIGHBORS = 10;
 const LOW_CONFIDENCE_THRESHOLD = 70;
 const SUPPORTED_MODES = new Set(["learn", "quiz"]);
+const PREDICTION_STATUS = {
+  DETECTED: "detected",
+  PENDING: "pending",
+  ERROR: "error",
+};
 
 /**
  * 손목을 기준으로 landmark 좌표 정규화
@@ -52,6 +57,7 @@ export function predictGesture(normalizedLandmarks) {
   if (!isValidInput) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.ERROR,
       confidence: 0,
       message: "인식에 실패했습니다. 다시 시도해 주세요.",
     };
@@ -66,6 +72,7 @@ export function predictGesture(normalizedLandmarks) {
   ) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.ERROR,
       confidence: 0,
       message: "인식에 실패했습니다. 다시 시도해 주세요.",
     };
@@ -103,6 +110,7 @@ export function predictGesture(normalizedLandmarks) {
 
   return {
     predictedNumber,
+    status: PREDICTION_STATUS.DETECTED,
     confidence,
     message: `숫자 ${predictedNumber}로 인식되었습니다.`,
   };
@@ -115,6 +123,7 @@ export function predictGestureFromLandmarks(landmarks, mode) {
   if (!SUPPORTED_MODES.has(mode)) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.ERROR,
       confidence: 0,
       message: "지원하지 않는 사용 모드입니다.",
     };
@@ -123,6 +132,7 @@ export function predictGestureFromLandmarks(landmarks, mode) {
   if (!Array.isArray(landmarks) || landmarks.length === 0) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.PENDING,
       confidence: 0,
       message: "손을 화면 안에 위치시켜 주세요.",
     };
@@ -131,6 +141,7 @@ export function predictGestureFromLandmarks(landmarks, mode) {
   if (landmarks.length !== HAND_LANDMARK_COUNT) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.PENDING,
       confidence: 0,
       message: "손 landmark를 다시 인식해 주세요.",
     };
@@ -140,6 +151,7 @@ export function predictGestureFromLandmarks(landmarks, mode) {
   if (normalizedLandmarks === null) {
     return {
       predictedNumber: null,
+      status: PREDICTION_STATUS.ERROR,
       confidence: 0,
       message: "인식에 실패했습니다. 다시 시도해 주세요.",
     };
@@ -152,6 +164,7 @@ export function predictGestureFromLandmarks(landmarks, mode) {
   ) {
     return {
       ...prediction,
+      status: PREDICTION_STATUS.PENDING,
       message: "손 모양을 더 정확히 보여주세요.",
     };
   }
