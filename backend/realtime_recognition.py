@@ -1,6 +1,12 @@
 import cv2
 import mediapipe as mp
+import pickle
+import numpy as np
 from preprocessing import normalize_landmarks
+
+# 모델 로드
+with open("backend/model.pkl", "rb") as f:
+    model = pickle.load(f)
 
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -27,13 +33,16 @@ while True:
         for hand_landmarks in result.multi_hand_landmarks:
             mp_draw.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-            # landmark 정규화
             coords = normalize_landmarks(hand_landmarks.landmark)
             if coords:
-                print(f"landmark 추출 완료: {len(coords)}개 값")
-                # 나중에 여기서 모델 예측 연결
+                pred = model.predict([coords])[0]
+                prob = model.predict_proba([coords])[0]
+                confidence = round(max(prob) * 100, 1)
 
-    cv2.imshow("Real-time Recognition", frame)
+                cv2.putText(frame, f"{pred} ({confidence}%)",
+                    (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
+
+    cv2.imshow("Sign Recognition", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
