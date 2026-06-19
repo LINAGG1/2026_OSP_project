@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 dataset/
 .DS_Store
+.vite/
+dist/
+node_modules/
