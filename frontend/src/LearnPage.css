@@ -1,0 +1,103 @@
+.learn-wrapper {
+  width: 100%;
+  height: 100vh;
+}
+
+/* 전체 = 웹캠 화면 */
+.webcam-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  color: white;
+}
+
+/* 좌측 상단 */
+.top-left-ui {
+  margin-left: 30px;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  gap: 100px;
+}
+
+.top-left-ui button {
+  margin-top: 10px;
+  padding: 10px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+/* 예시 이미지 */
+.example-box {
+  position: absolute;
+  top: 120px;
+  left: 20px;
+  z-index: 10;
+}
+
+.example-box img {
+  width: 150px;
+  border-radius: 10px;
+}
+
+/* 웹캠 영역 */
+.camera-box {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  color: white;
+}
+
+/* 테스트 버튼 */
+.test-btn {
+  position: absolute;
+  bottom: 30px;
+  left: 20px;
+  padding: 10px;
+}
+
+/* 모달 */
+.modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0,0,0,0.6);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+
+  text-align: center;
+}
+
+.modal button {
+  padding: 10px 16px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: white;
+  cursor: pointer;
+}
