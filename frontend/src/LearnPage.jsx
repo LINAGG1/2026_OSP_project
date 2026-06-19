@@ -1,85 +1,164 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "./LearnPage.css";
 import { useNavigate } from "react-router-dom";
 
+import { predictGestureFromLandmarks } from "../utils/gestureModel";
+import { judgeAnswer } from "../utils/answerJudge";
+import { saveResult } from "../utils/resultStorage";
+
 function LearnPage() {
   const targetNumber = 4;
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const navigate = useNavigate();
 
-  const [showExample, setShowExample] = useState(false);
+  const [accuracy, setAccuracy] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [accuracy, setAccuracy] = useState(87); // 나중에 AI 값으로 교체
+  const [showExample, setShowExample] = useState(false);
 
-  // 예시 보기 (2초 후 자동 닫힘)
-  const handleExample = () => {
-    setShowExample(true);
+  useEffect(() => {
+    let camera = null;
+    let hands = null;
 
-    setTimeout(() => {
-      setShowExample(false);
-    }, 2000);
-  };
+    const init = async () => {
 
-  //  AI가 4라고 인식했다고 가정
-  const fakeDetect = () => {
-    setModalOpen(true);
-  };
+      if (!window.Hands || !window.Camera) {
+        console.log("MediaPipe 로딩 대기 중...");
+        setTimeout(init, 200);
+        return;
+      }
+
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+
+
+      hands = new window.Hands({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7,
+      });
+
+      //  결과 콜백
+      hands.onResults((results) => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (results.image) {
+          ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+        }
+
+        if (!results.multiHandLandmarks) return;
+
+        const landmarks = results.multiHandLandmarks[0];
+
+        //  모델 예측
+        const prediction = predictGestureFromLandmarks(landmarks, "learn");
+
+        if (prediction.predictedNumber !== null) {
+          setAccuracy(prediction.confidence);
+
+          //  정답 판별
+          const result = judgeAnswer({
+            targetNumber,
+            predictedNumber: prediction.predictedNumber,
+            confidence: prediction.confidence,
+            mode: "learn",
+          });
+
+          if (result.isCorrect) {
+            saveResult({
+              mode: "learn",
+              totalCount: 1,
+              correctCount: 1,
+              wrongCount: 0,
+              score: 100,
+              accuracy: prediction.confidence,
+              completedAt: new Date().toISOString(),
+              results: [
+                {
+                  targetNumber,
+                  predictedNumber: prediction.predictedNumber,
+                  isCorrect: true,
+                },
+              ],
+            });
+
+            setModalOpen(true);
+          }
+        }
+      });
+
+      //  카메라 연결
+      camera = new window.Camera(video, {
+        onFrame: async () => {
+          await hands.send({ image: video });
+        },
+        width: 640,
+        height: 480,
+      });
+
+      camera.start();
+    };
+
+    init();
+
+    return () => {
+      if (camera) camera.stop();
+    };
+  }, []);
 
   return (
     <div className="learn-wrapper">
-
-      {/* 웹캠 화면 */}
       <div className="webcam-area">
 
-        {/* 좌측 상단 UI */}
+        {/* top UI */}
         <div className="top-left-ui">
           <h2>숫자 {targetNumber}</h2>
 
-          <button onClick={handleExample}>
+          <button onClick={() => setShowExample((v) => !v)}>
             예시 보기
           </button>
         </div>
 
-        {/* 예시 이미지 */}
+        {/* example */}
         {showExample && (
           <div className="example-box">
-            <img
-              src="/example4.png"
-              alt="example"
-            />
+            <img src="/example4.png" alt="example" />
           </div>
         )}
 
-        {/* 웹캠 자리 (나중에 video로 교체) */}
-        <div className="camera-box">
-          <p>웹캠 화면 영역</p>
-        </div>
+        {/* video hidden */}
+        <video ref={videoRef} style={{ display: "none" }} />
 
-        {/* 테스트용 버튼 (AI 대신) */}
-        <button
-          className="test-btn"
-          onClick={fakeDetect}
-        >
-          (테스트) 4 인식
-        </button>
+        {/* canvas output */}
+        <canvas
+          ref={canvasRef}
+          width={640}
+          height={480}
+          className="camera-box"
+        />
       </div>
 
-      {/*  정답 모달 */}
+      {/* modal */}
       {modalOpen && (
         <div className="modal-bg">
           <div className="modal">
-
-            <h2>{accuracy}% 일치</h2>
-
+            <h2>{accuracy.toFixed(1)}% 일치</h2>
             <p>학습 완료!</p>
 
             <button onClick={() => navigate("/")}>
               홈으로
             </button>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
