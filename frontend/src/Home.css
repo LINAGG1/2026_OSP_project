@@ -1,0 +1,129 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 100%;
+  width: 100%;
+  margin: 50px 0;
+  padding: 0 20px;
+}
+
+.container h1 {
+  text-align: center;
+  margin-bottom: 100px;
+  font-weight: 700;
+}
+
+.content {
+  display: flex;
+  gap: 40px;
+}
+
+/* LEFT */
+.left-panel {
+  flex: 2;
+  min-height: 400px;
+  padding: 20px;
+}
+
+/* 진도율 헤더 (핵심) */
+.progress-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+
+  margin-bottom: 15px;
+}
+
+.progress-header h2 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 25px;
+  margin-bottom: 10px;
+}
+
+.progress-percent {
+  font-size: 25px;
+  font-weight: bold;
+  color: #4caf50;
+  margin-bottom: 10px;
+}
+
+/* progress bar */
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e5e5e5;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4caf50;
+}
+
+/* sticker board */
+.sticker-board {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.sticker {
+  width: 70px;
+  height: 70px;
+
+  border-radius: 50%;
+  border: 3px solid #4caf50;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 25px;
+
+  background-color: white;
+  margin: auto;
+
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* RIGHT */
+.right-panel {
+  flex: 1;
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  gap: 50px;
+}
+
+.action-btn {
+  width: 100%;
+  max-width: 280px;
+
+  padding: 15px;
+  font-size: 25px;
+  font-weight: 500;
+
+  border: none;
+  border-radius: 10px;
+
+  background-color: #4caf50;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  cursor: pointer;
+}
