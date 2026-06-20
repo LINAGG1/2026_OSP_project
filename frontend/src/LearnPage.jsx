@@ -23,7 +23,12 @@ function LearnPage() {
   const dimensionsRef = useRef({ width: 0, height: 0, scale: 1, xOffset: 0, yOffset: 0 });
 
   const isFinishedRef = useRef(false);
+  
 
+  const correctTimerRef = useRef(null); 
+  const isHoldingCorrectRef = useRef(false); // 현재 정답 자세를 홀딩 중인지 여부
+
+  // 예시 사진 2초 뒤 숨기기 타이머
   const startHideTimer = () => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -32,9 +37,16 @@ function LearnPage() {
   };
 
   useEffect(() => {
+    setShowExample(true); 
     startHideTimer();
+    
+    // 페이지가 바뀔 땐 홀딩 관련 상태도 완전히 리셋
+    isHoldingCorrectRef.current = false;
+    if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
+
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
     };
   }, [targetNumber]);
 
@@ -111,6 +123,13 @@ function LearnPage() {
           ctx.drawImage(results.image, xOffset, yOffset, imgWidth * scale, imgHeight * scale);
 
           if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+            if (isHoldingCorrectRef.current) {
+              isHoldingCorrectRef.current = false;
+              if (correctTimerRef.current) {
+                clearTimeout(correctTimerRef.current);
+                correctTimerRef.current = null;
+              }
+            }
             ctx.restore();
             return;
           }
@@ -135,6 +154,14 @@ function LearnPage() {
           }
 
           if (prediction.status !== "detected") {
+            // 손은 감지되었으나 올바른 포즈가 아니면 타이머 리셋
+            if (isHoldingCorrectRef.current) {
+              isHoldingCorrectRef.current = false;
+              if (correctTimerRef.current) {
+                clearTimeout(correctTimerRef.current);
+                correctTimerRef.current = null;
+              }
+            }
             ctx.restore();
             return;
           }
@@ -148,18 +175,36 @@ function LearnPage() {
             "learn"
           );
 
+
           if (judgeResult.status === "correct") {
-            isFinishedRef.current = true; 
+            if (!isHoldingCorrectRef.current) {
+              // 처음 정답 진입 시점에만 타이머 구동 (중복 방지)
+              isHoldingCorrectRef.current = true;
+              
+              // 1.5초(1500ms) 동안 이 조건이 계속 유지되면 최종 정답 처리 완료
+              correctTimerRef.current = setTimeout(() => {
+                isFinishedRef.current = true; 
 
-            const singleCorrectResult = [{
-              targetNumber,
-              predictedNumber: prediction.predictedNumber,
-              isCorrect: true,
-            }];
+                const singleCorrectResult = [{
+                  targetNumber,
+                  predictedNumber: prediction.predictedNumber,
+                  isCorrect: true,
+                }];
 
-            const summary = createResultSummary("learn", singleCorrectResult);
-            saveResult(summary);
-            setModalOpen(true);
+                const summary = createResultSummary("learn", singleCorrectResult);
+                saveResult(summary);
+                setModalOpen(true);
+              }, 1500); 
+            }
+          } else {
+            // 정답 조건을 만족하지 못하는 틀린 포즈가 들어오면 타이머 파괴
+            if (isHoldingCorrectRef.current) {
+              isHoldingCorrectRef.current = false;
+              if (correctTimerRef.current) {
+                clearTimeout(correctTimerRef.current);
+                correctTimerRef.current = null;
+              }
+            }
           }
         }
         ctx.restore();
@@ -209,7 +254,7 @@ function LearnPage() {
         <canvas ref={canvasRef} className="camera-box" />
       </div>
 
-
+      {/* 완료 모달 창 */}
       {modalOpen && (
         <div className="modal-bg">
           <div className="modal">
@@ -221,13 +266,13 @@ function LearnPage() {
                 홈으로
               </button>
               
-              {/* 10번 미만일 때만 다음 학습 버튼을 띄우고, 10번을 깨면 완료 문구를 보여줍니다 */}
               {targetNumber < 10 ? (
                 <button 
                   className="modal-btn next-btn"
                   onClick={() => {
                     setModalOpen(false);
-                    isFinishedRef.current = false; // 카메라 단절 해제하여 재인식 활성화
+                    setAccuracy(0);
+                    isFinishedRef.current = false; 
                     navigate(`/learn/${targetNumber + 1}`);
                   }}
                   style={{ backgroundColor: "#4caf50", color: "white", border: "none" }}
