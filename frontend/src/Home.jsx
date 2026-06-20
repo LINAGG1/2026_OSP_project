@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./Home.css";
 
 function Home() {
+  const navigate = useNavigate();
   const progress = 54;
 
   return (
@@ -11,13 +13,11 @@ function Home() {
       <div className="content">
         {/* LEFT */}
         <div className="left-panel">
-          {/* 진도율 헤더 */}
           <div className="progress-header">
             <h2>진도율</h2>
             <span className="progress-percent">{progress}%</span>
           </div>
 
-          {/* progress bar */}
           <div className="progress-bar">
             <div
               className="progress-fill"
@@ -25,7 +25,6 @@ function Home() {
             ></div>
           </div>
 
-          {/* sticker */}
           <div className="sticker-board">
             {Array.from({ length: 11 }, (_, num) => (
               <div key={num} className="sticker">
@@ -37,8 +36,19 @@ function Home() {
 
         {/* RIGHT */}
         <div className="right-panel">
-          <button className="action-btn">학습 시작</button>
-          <button className="action-btn">퀴즈 시작</button>
+          <button
+            onClick={() => navigate("/learn")}
+            className="action-btn"
+          >
+            학습 시작
+          </button>
+
+          <button
+            onClick={() => navigate("/quiz")}
+            className="action-btn"
+          >
+            퀴즈 시작
+          </button>
         </div>
       </div>
     </div>
