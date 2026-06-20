@@ -1,5 +1,10 @@
 const STORAGE_KEY = "signSessionResults";
 const SUPPORTED_MODES = new Set(["learn", "quiz"]);
+const STORAGE_STATUS = {
+  SAVED: "saved",
+  CLEARED: "cleared",
+  ERROR: "error",
+};
 
 function canUseLocalStorage() {
   return typeof localStorage !== "undefined";
@@ -86,6 +91,7 @@ export function saveResult(resultSummary) {
   if (!isValidResultSummary(resultSummary)) {
     return {
       isSaved: false,
+      status: STORAGE_STATUS.ERROR,
       message: "저장할 결과 데이터가 올바르지 않습니다.",
     };
   }
@@ -93,6 +99,7 @@ export function saveResult(resultSummary) {
   if (!canUseLocalStorage()) {
     return {
       isSaved: false,
+      status: STORAGE_STATUS.ERROR,
       message: "결과 저장에 실패했습니다.",
     };
   }
@@ -104,11 +111,13 @@ export function saveResult(resultSummary) {
 
     return {
       isSaved: true,
+      status: STORAGE_STATUS.SAVED,
       message: "결과가 저장되었습니다.",
     };
   } catch {
     return {
       isSaved: false,
+      status: STORAGE_STATUS.ERROR,
       message: "결과 저장에 실패했습니다.",
     };
   }
@@ -122,5 +131,34 @@ export function getSavedResults() {
     return getStorageResults();
   } catch {
     return [];
+  }
+}
+
+/**
+ * 저장된 학습/퀴즈 결과 초기화
+ */
+export function clearSavedResults() {
+  if (!canUseLocalStorage()) {
+    return {
+      isCleared: false,
+      status: STORAGE_STATUS.ERROR,
+      message: "결과 초기화에 실패했습니다.",
+    };
+  }
+
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+
+    return {
+      isCleared: true,
+      status: STORAGE_STATUS.CLEARED,
+      message: "저장된 결과가 초기화되었습니다.",
+    };
+  } catch {
+    return {
+      isCleared: false,
+      status: STORAGE_STATUS.ERROR,
+      message: "결과 초기화에 실패했습니다.",
+    };
   }
 }
