@@ -23,12 +23,22 @@ function LearnPage() {
     let camera = null;
     let hands = null;
 
-    // window 객체에서 안전하게 MediaPipe 가져오기
     const mp = window;
     if (!mp.Hands || !mp.Camera) {
       console.error("MediaPipe 라이브러리가 로드되지 않았습니다. index.html을 확인하세요.");
       return;
     }
+
+    const resizeCanvas = () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
 
     const init = async () => {
       const video = videoRef.current;
@@ -37,7 +47,6 @@ function LearnPage() {
 
       if (!video || !canvas) return;
 
-      // 1. Hands 초기화
       hands = new mp.Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
       });
@@ -49,82 +58,102 @@ function LearnPage() {
         minTrackingConfidence: 0.7,
       });
 
-      // 2. 결과 처리 루프
       hands.onResults((results) => {
-        // [중요] 손 감지 여부와 상관없이 매 프레임마다 카메라 영상은 캔버스에 먼저 그립니다!
         ctx.save();
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         if (results.image) {
-          ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-        }
+          const imgWidth = results.image.width;
+          const imgHeight = results.image.height;
+          const canvasWidth = canvas.width;
+          const canvasHeight = canvas.height;
 
-        // 손이 안 보이면 여기서 리턴 (카메라 화면은 유지됨)
-        if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-          ctx.restore();
-          return;
-        }
+          // 영상을 전체 화면에 맞추기 위한 비율 계산
+          const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight);
+          const xOffset = (canvasWidth / 2) - (imgWidth / 2) * scale;
+          const yOffset = (canvasHeight / 2) - (imgHeight / 2) * scale;
 
-        const landmarks = results.multiHandLandmarks[0];
+          // 1. 배경 카메라 영상 그리기
+          ctx.drawImage(results.image, xOffset, yOffset, imgWidth * scale, imgHeight * scale);
 
-        // 손 제스처 예측 및 시각화
-        const prediction = predictGestureFromLandmarks(landmarks, "learn");
+          // 손 데이터가 없으면 리턴
+          if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+            ctx.restore();
+            return;
+          }
 
-        // 스켈레톤 그리기
-        if (mp.drawLandmarks && mp.drawConnectors) {
-          mp.drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
-          mp.drawConnectors(ctx, landmarks, mp.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
-        }
+          const originalLandmarks = results.multiHandLandmarks[0];
 
-        if (prediction.status !== "detected") {
-          ctx.restore();
-          return;
-        }
+       
+          const convertedLandmarks = originalLandmarks.map((landmark) => {
 
-        setAccuracy(prediction.confidence);
+            const pixelX = landmark.x * imgWidth * scale + xOffset;
+            const pixelY = landmark.y * imgHeight * scale + yOffset;
 
-        // 정답 판별
-        const judgeResult = judgeAnswer(
-          targetNumber,
-          prediction.predictedNumber,
-          prediction.confidence,
-          "learn"
-        );
+            return {
 
-        resultsRef.current.push({
-          targetNumber,
-          predictedNumber: prediction.predictedNumber,
-          isCorrect: judgeResult.status === "correct",
-        });
+              x: pixelX / canvasWidth,
+              y: pixelY / canvasHeight,
+              z: landmark.z // z축은 비율에 영향이 없으므로 그대로 유지
+            };
+          });
 
-        if (judgeResult.status === "correct") {
-          const summary = createResultSummary("learn", resultsRef.current);
-          saveResult(summary);
-          setModalOpen(true);
+
+          const prediction = predictGestureFromLandmarks(originalLandmarks, "learn");
+
+          if (mp.drawLandmarks && mp.drawConnectors) {
+            mp.drawLandmarks(ctx, convertedLandmarks, { color: '#FF0000', lineWidth: 2 });
+            mp.drawConnectors(ctx, convertedLandmarks, mp.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+          }
+
+          if (prediction.status !== "detected") {
+            ctx.restore();
+            return;
+          }
+
+          setAccuracy(prediction.confidence);
+
+          const judgeResult = judgeAnswer(
+            targetNumber,
+            prediction.predictedNumber,
+            prediction.confidence,
+            "learn"
+          );
+
+          resultsRef.current.push({
+            targetNumber,
+            predictedNumber: prediction.predictedNumber,
+            isCorrect: judgeResult.status === "correct",
+          });
+
+          if (judgeResult.status === "correct") {
+            const summary = createResultSummary("learn", resultsRef.current);
+            saveResult(summary);
+            setModalOpen(true);
+          }
         }
 
         ctx.restore();
       });
 
-      // 3. Camera 인스턴스 생성 및 시작
       camera = new mp.Camera(video, {
         onFrame: async () => {
           await hands.send({ image: video });
         },
         width: 640,
-        height: 480,
+        height: 480
       });
 
       camera.start();
     };
 
-    // 약간의 딜레이를 주어 DOM과 window 객체가 완전히 준비된 후 실행되도록 유도
     const timer = setTimeout(() => {
       init();
     }, 500);
 
     return () => {
       clearTimeout(timer);
+      window.removeEventListener("resize", resizeCanvas);
       if (camera) camera.stop();
       if (hands) hands.close();
     };
@@ -144,11 +173,8 @@ function LearnPage() {
           </div>
         )}
 
-        {/* 미디어 스트림을 받을 숨겨진 video 태그 (오타 수정 완료) */}
         <video ref={videoRef} playsInline muted style={{ display: "none" }} />
-
-        {/* 실제로 화면을 그려서 보여줄 canvas 태그 */}
-        <canvas ref={canvasRef} width={640} height={480} className="camera-box" />
+        <canvas ref={canvasRef} className="camera-box" />
       </div>
 
       {modalOpen && (
