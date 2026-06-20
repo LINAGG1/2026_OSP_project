@@ -7,7 +7,7 @@ import { judgeAnswer } from "./utils/answerJudge";
 import { createResultSummary, saveResult } from "./utils/resultStorage";
 
 function LearnPage() {
-  const targetNumber = 4;
+  const targetNumber = 4; 
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -15,9 +15,32 @@ function LearnPage() {
 
   const [accuracy, setAccuracy] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [showExample, setShowExample] = useState(false);
+  const [showExample, setShowExample] = useState(true);
+  
+  const timerRef = useRef(null);
+  const dimensionsRef = useRef({ width: 0, height: 0, scale: 1, xOffset: 0, yOffset: 0 });
 
-  const resultsRef = useRef([]);
+ 
+  const isFinishedRef = useRef(false);
+
+  const startHideTimer = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setShowExample(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    startHideTimer();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const handleShowExampleBtn = () => {
+    setShowExample(true);
+    startHideTimer();
+  };
 
   useEffect(() => {
     let camera = null;
@@ -29,16 +52,31 @@ function LearnPage() {
       return;
     }
 
-    const resizeCanvas = () => {
+    const updateDimensions = () => {
       const canvas = canvasRef.current;
-      if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+      if (!canvas) return;
+
+      const wWidth = window.innerWidth;
+      const wHeight = window.innerHeight;
+      
+      canvas.width = wWidth;
+      canvas.height = wHeight;
+
+      const imgWidth = 640;
+      const imgHeight = 480;
+      const scale = Math.max(wWidth / imgWidth, wHeight / imgHeight);
+      
+      dimensionsRef.current = {
+        width: wWidth,
+        height: wHeight,
+        scale: scale,
+        xOffset: (wWidth / 2) - (imgWidth / 2) * scale,
+        yOffset: (wHeight / 2) - (imgHeight / 2) * scale
+      };
     };
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
 
     const init = async () => {
       const video = videoRef.current;
@@ -53,30 +91,25 @@ function LearnPage() {
 
       hands.setOptions({
         maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7,
+        modelComplexity: 0, 
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.6,
       });
 
       hands.onResults((results) => {
+        
+        if (isFinishedRef.current) return;
+
         ctx.save();
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, dimensionsRef.current.width, dimensionsRef.current.height);
         
         if (results.image) {
+          const { width: canvasWidth, height: canvasHeight, scale, xOffset, yOffset } = dimensionsRef.current;
           const imgWidth = results.image.width;
           const imgHeight = results.image.height;
-          const canvasWidth = canvas.width;
-          const canvasHeight = canvas.height;
 
-          // 영상을 전체 화면에 맞추기 위한 비율 계산
-          const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight);
-          const xOffset = (canvasWidth / 2) - (imgWidth / 2) * scale;
-          const yOffset = (canvasHeight / 2) - (imgHeight / 2) * scale;
-
-          // 1. 배경 카메라 영상 그리기
           ctx.drawImage(results.image, xOffset, yOffset, imgWidth * scale, imgHeight * scale);
 
-          // 손 데이터가 없으면 리턴
           if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
             ctx.restore();
             return;
@@ -84,26 +117,21 @@ function LearnPage() {
 
           const originalLandmarks = results.multiHandLandmarks[0];
 
-       
           const convertedLandmarks = originalLandmarks.map((landmark) => {
-
             const pixelX = landmark.x * imgWidth * scale + xOffset;
             const pixelY = landmark.y * imgHeight * scale + yOffset;
-
             return {
-
               x: pixelX / canvasWidth,
               y: pixelY / canvasHeight,
-              z: landmark.z // z축은 비율에 영향이 없으므로 그대로 유지
+              z: landmark.z
             };
           });
-
 
           const prediction = predictGestureFromLandmarks(originalLandmarks, "learn");
 
           if (mp.drawLandmarks && mp.drawConnectors) {
-            mp.drawLandmarks(ctx, convertedLandmarks, { color: '#FF0000', lineWidth: 2 });
-            mp.drawConnectors(ctx, convertedLandmarks, mp.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+            mp.drawLandmarks(ctx, convertedLandmarks, { color: '#FF0000', lineWidth: 1.5 });
+            mp.drawConnectors(ctx, convertedLandmarks, mp.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 2.5 });
           }
 
           if (prediction.status !== "detected") {
@@ -120,25 +148,31 @@ function LearnPage() {
             "learn"
           );
 
-          resultsRef.current.push({
-            targetNumber,
-            predictedNumber: prediction.predictedNumber,
-            isCorrect: judgeResult.status === "correct",
-          });
-
+       
           if (judgeResult.status === "correct") {
-            const summary = createResultSummary("learn", resultsRef.current);
+            isFinishedRef.current = true; 
+
+            // 단 한 개의 성공 데이터 세트만 배열에 담아 전달
+            const singleCorrectResult = [{
+              targetNumber,
+              predictedNumber: prediction.predictedNumber,
+              isCorrect: true,
+            }];
+
+            const summary = createResultSummary("learn", singleCorrectResult);
             saveResult(summary);
             setModalOpen(true);
           }
         }
-
         ctx.restore();
       });
 
       camera = new mp.Camera(video, {
         onFrame: async () => {
-          await hands.send({ image: video });
+          // 완료되면 웹캠 요청 자체를 중단하여 CPU 과부하 완전 방지
+          if (!isFinishedRef.current && video) {
+            await hands.send({ image: video });
+          }
         },
         width: 640,
         height: 480
@@ -153,7 +187,7 @@ function LearnPage() {
 
     return () => {
       clearTimeout(timer);
-      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("resize", updateDimensions);
       if (camera) camera.stop();
       if (hands) hands.close();
     };
@@ -164,12 +198,12 @@ function LearnPage() {
       <div className="webcam-area">
         <div className="top-left-ui">
           <h2>숫자 {targetNumber}</h2>
-          <button onClick={() => setShowExample((v) => !v)}>예시 보기</button>
+          <button onClick={handleShowExampleBtn}>예시 보기</button>
         </div>
 
         {showExample && (
           <div className="example-box">
-            <img src="/example4.png" alt="example" />
+            <img src={`/example_${targetNumber}.jpeg`} alt={`숫자 ${targetNumber} 예시`} />
           </div>
         )}
 
