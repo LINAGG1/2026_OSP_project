@@ -110,6 +110,13 @@ html, body {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.sticker.completed {
+  background-color: #4caf50;
+  color: white;
+  border-color: #4caf50;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 .clear-btn {
   width: 70px !important;
   height: 70px !important;
