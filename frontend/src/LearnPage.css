@@ -55,13 +55,11 @@
   background: #43a047;
 }
 
-
 .example-box {
   position: absolute;
   top: 110px;
   left: 45px; 
   z-index: 10;
-
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -78,11 +76,10 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* modal */
 .modal-bg {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -95,14 +92,43 @@
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  min-width: 280px; 
 }
 
-.modal button {
-  margin-top: 15px;
-  padding: 10px 16px;
+/* 두 버튼을 감싸는 Flex 가로 정렬 박스 */
+.modal div {
+  display: flex;
+  gap: 12px;           /* 버튼 사이의 간격 */
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* 공통 모달 버튼 기본 디자인 ('홈으로' 버튼에 기본 적용) */
+.modal-btn {
+  padding: 11px 20px;
   border: none;
   border-radius: 8px;
-  background: #4caf50;
-  color: white;
+  font-size: 15px;
+  font-weight: bold;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  background: #eee;    /* 차분한 회색 */
+  color: #333;
+}
+
+.modal-btn:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+/* '다음 숫자 학습' 버튼용 초록색 강조 스타일 */
+.modal-btn.next-btn {
+  background: #4caf50; /* 선명한 초록색 */
+  color: white;
+}
+
+.modal-btn.next-btn:hover {
+  background: #43a047;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
 }

@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import "./LearnPage.css";
-import { useNavigate } from "react-router-dom";
+
+import { useNavigate, useParams } from "react-router-dom";
 
 import { predictGestureFromLandmarks } from "./utils/gestureModel";
 import { judgeAnswer } from "./utils/answerJudge";
 import { createResultSummary, saveResult } from "./utils/resultStorage";
 
 function LearnPage() {
-  const targetNumber = 4; 
+  const { number } = useParams(); 
+  const targetNumber = parseInt(number, 10) || 0; 
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -20,7 +22,6 @@ function LearnPage() {
   const timerRef = useRef(null);
   const dimensionsRef = useRef({ width: 0, height: 0, scale: 1, xOffset: 0, yOffset: 0 });
 
- 
   const isFinishedRef = useRef(false);
 
   const startHideTimer = () => {
@@ -35,7 +36,7 @@ function LearnPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [targetNumber]);
 
   const handleShowExampleBtn = () => {
     setShowExample(true);
@@ -97,7 +98,6 @@ function LearnPage() {
       });
 
       hands.onResults((results) => {
-        
         if (isFinishedRef.current) return;
 
         ctx.save();
@@ -148,11 +148,9 @@ function LearnPage() {
             "learn"
           );
 
-       
           if (judgeResult.status === "correct") {
             isFinishedRef.current = true; 
 
-            // 단 한 개의 성공 데이터 세트만 배열에 담아 전달
             const singleCorrectResult = [{
               targetNumber,
               predictedNumber: prediction.predictedNumber,
@@ -169,7 +167,6 @@ function LearnPage() {
 
       camera = new mp.Camera(video, {
         onFrame: async () => {
-          // 완료되면 웹캠 요청 자체를 중단하여 CPU 과부하 완전 방지
           if (!isFinishedRef.current && video) {
             await hands.send({ image: video });
           }
@@ -191,7 +188,8 @@ function LearnPage() {
       if (camera) camera.stop();
       if (hands) hands.close();
     };
-  }, []);
+
+  }, [targetNumber]);
 
   return (
     <div className="learn-wrapper">
@@ -211,12 +209,37 @@ function LearnPage() {
         <canvas ref={canvasRef} className="camera-box" />
       </div>
 
+
       {modalOpen && (
         <div className="modal-bg">
           <div className="modal">
             <h2>{accuracy.toFixed(1)}% 일치</h2>
             <p>학습 완료!</p>
-            <button onClick={() => navigate("/")}>홈으로</button>
+            
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "15px" }}>
+              <button className="modal-btn" onClick={() => navigate("/")}>
+                홈으로
+              </button>
+              
+              {/* 10번 미만일 때만 다음 학습 버튼을 띄우고, 10번을 깨면 완료 문구를 보여줍니다 */}
+              {targetNumber < 10 ? (
+                <button 
+                  className="modal-btn next-btn"
+                  onClick={() => {
+                    setModalOpen(false);
+                    isFinishedRef.current = false; // 카메라 단절 해제하여 재인식 활성화
+                    navigate(`/learn/${targetNumber + 1}`);
+                  }}
+                  style={{ backgroundColor: "#4caf50", color: "white", border: "none" }}
+                >
+                  다음 숫자 학습
+                </button>
+              ) : (
+                <span style={{ fontSize: "15px", color: "#4caf50", fontWeight: "bold", alignSelf: "center" }}>
+                  🎉 모든 숫자 마스터!
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
