@@ -2,45 +2,44 @@ import React, { useEffect, useState } from "react";
 import "./Home.css";
 import { useNavigate } from "react-router-dom";
 
+import { getSavedResults, clearSavedResults } from "./utils/resultStorage";
+
 function Home() {
   const navigate = useNavigate();
 
+  const [completedNumbers, setCompletedNumbers] = useState([]); // 완료한 숫자 배열
+  const [progress, setProgress] = useState(0); // 진도율 퍼센트
 
-  const [completedNumbers, setCompletedNumbers] = useState([]); // 완료한 숫자 배열 (예: [0, 1, 4])
-  const [progress, setProgress] = useState(0); // 진도율 퍼센트 (0 ~ 100)
-
-  // 화면이 켜질 때 로컬 스토리지에서 학습 데이터를 읽어옴
+  // 화면이 켜질 때 실제 저장된 세션 데이터를 파싱하여 진도율 계산
   useEffect(() => {
     const loadProgressData = () => {
-      try {
 
+      const savedSessions = getSavedResults(); 
+      
+      if (savedSessions && savedSessions.length > 0) {
+        const correctNumbers = [];
 
-        const rawData = localStorage.getItem("signSessionResults");
-        
-        if (rawData) {
-          const parsedData = JSON.parse(rawData);
-          
-          // 중복을 제거하고 '성공(isCorrect: true)'한 targetNumber만 골라냄
-          const correctNumbers = parsedData
-            .filter((item) => item.isCorrect === true)
-            .map((item) => item.targetNumber);
-          
-          // 중복 숫자 제거 (동일 숫자를 여러 번 학습했을 수 있으므로)
-          const uniqueCompleted = [...new Set(correctNumbers)];
-          
-          setCompletedNumbers(uniqueCompleted);
+      
+        savedSessions.forEach((session) => {
+          if (session.mode === "learn" && Array.isArray(session.results)) {
+            session.results.forEach((res) => {
+              if (res.isCorrect === true && res.targetNumber !== null) {
+                correctNumbers.push(res.targetNumber);
+              }
+            });
+          }
+        });
 
-          // 0부터 10까지 총 11개의 숫자 중 완료한 비율 계산
-          const totalNumbersCount = 11;
-          const calculatedProgress = Math.round((uniqueCompleted.length / totalNumbersCount) * 100);
-          setProgress(calculatedProgress);
-        } else {
-          // 기록이 아예 없는 초보 유저 상태
-          setCompletedNumbers([]);
-          setProgress(0);
-        }
-      } catch (error) {
-        console.error("진도율 데이터를 불러오는 중 오류 발생:", error);
+        // 동일 숫자를 여러 번 학습했을 수 있으므로 중복 제거 (예: [4, 4, 2] -> [4, 2])
+        const uniqueCompleted = [...new Set(correctNumbers)];
+        setCompletedNumbers(uniqueCompleted);
+
+        // 0부터 10까지 총 11개의 숫자 중 완료한 비율 계산
+        const totalNumbersCount = 11;
+        const calculatedProgress = Math.round((uniqueCompleted.length / totalNumbersCount) * 100);
+        setProgress(calculatedProgress);
+      } else {
+        // 데이터가 없으면 초기 상태 유지
         setCompletedNumbers([]);
         setProgress(0);
       }
@@ -49,13 +48,17 @@ function Home() {
     loadProgressData();
   }, []);
 
-  // 초기화 버튼 클릭 시 로컬 스토리지 비우기 및 상태 리셋
+  // 유틸 내 clearSavedResults 함수를 사용하여 안전하게 전체 기록 초기화
   const handleReset = () => {
-    if (window.confirm("정말 모든 학습 기록을 초기화하시겠습니까?")) {
-      localStorage.removeItem("signSessionResults");
-      setCompletedNumbers([]);
-      setProgress(0);
-      alert("학습 기록이 초기화되었습니다.");
+    if (window.confirm("정말 모든 학습 및 퀴즈 기록을 초기화하시겠습니까?")) {
+      const response = clearSavedResults();
+      if (response.isCleared) {
+        setCompletedNumbers([]);
+        setProgress(0);
+        alert(response.message);
+      } else {
+        alert("초기화에 실패했습니다.");
+      }
     }
   };
 
@@ -79,13 +82,11 @@ function Home() {
           {/* 스티커 보드 (0 ~ 10 동그라미) */}
           <div className="sticker-board">
             {Array.from({ length: 11 }, (_, i) => {
-              //  현재 숫자가 완료된 숫자 배열에 포함되어 있는지 확인함
               const isDone = completedNumbers.includes(i);
 
               return (
                 <div 
                   key={i} 
-                  /* 완료 여부에 따라 'completed' 클래스를 동적으로 붙여줌 */
                   className={`sticker ${isDone ? "completed" : ""}`}
                 >
                   {i}
