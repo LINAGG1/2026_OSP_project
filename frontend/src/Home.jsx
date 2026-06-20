@@ -13,13 +13,11 @@ function Home() {
   // 화면이 켜질 때 실제 저장된 세션 데이터를 파싱하여 진도율 계산
   useEffect(() => {
     const loadProgressData = () => {
-
       const savedSessions = getSavedResults(); 
       
       if (savedSessions && savedSessions.length > 0) {
         const correctNumbers = [];
 
-      
         savedSessions.forEach((session) => {
           if (session.mode === "learn" && Array.isArray(session.results)) {
             session.results.forEach((res) => {
@@ -47,6 +45,21 @@ function Home() {
 
     loadProgressData();
   }, []);
+
+  const handleLearnStart = () => {
+    let nextNumber = 0;
+    
+    // 0번부터 10번까지 순서대로 검사하며 완료 목록에 없는 숫자가 나오면 스톱
+    for (let i = 0; i <= 10; i++) {
+      if (!completedNumbers.includes(i)) {
+        nextNumber = i;
+        break;
+      }
+    }
+    
+    // 이동할 주소 뒤에 동적 파라미터(:number) 값을 붙여서 전송
+    navigate(`/learn/${nextNumber}`);
+  };
 
   // 유틸 내 clearSavedResults 함수를 사용하여 안전하게 전체 기록 초기화
   const handleReset = () => {
@@ -79,7 +92,7 @@ function Home() {
             <div className="progress-fill" style={{ width: `${progress}%` }}></div>
           </div>
 
-          {/* 스티커 보드 (0 ~ 10 동그라미) */}
+
           <div className="sticker-board">
             {Array.from({ length: 11 }, (_, i) => {
               const isDone = completedNumbers.includes(i);
@@ -88,6 +101,9 @@ function Home() {
                 <div 
                   key={i} 
                   className={`sticker ${isDone ? "completed" : ""}`}
+
+                  onClick={() => navigate(`/learn/${i}`)} 
+                  style={{ cursor: "pointer" }}
                 >
                   {i}
                 </div>
@@ -103,7 +119,7 @@ function Home() {
 
         {/* RIGHT PANEL: 액션 버튼들 */}
         <div className="right-panel">
-          <button className="action-btn" onClick={() => navigate("/learn")}>
+          <button className="action-btn" onClick={handleLearnStart}>
             학습 시작
           </button>
           <button className="action-btn" onClick={() => navigate("/quiz")}>
