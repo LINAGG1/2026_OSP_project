@@ -106,6 +106,8 @@ function QuizPage() {
     let camera = null;
     let hands = null;
 
+    let isActive = true; 
+
     const mp = window;
     if (!mp.Hands || !mp.Camera) return;
 
@@ -147,7 +149,8 @@ function QuizPage() {
       });
 
       hands.onResults((results) => {
-        if (isAnswering || quizFinished) return;
+
+        if (!isActive || isAnswering || quizFinished) return;
 
         ctx.save();
         ctx.clearRect(0, 0, dimensionsRef.current.width, dimensionsRef.current.height);
@@ -184,7 +187,6 @@ function QuizPage() {
 
           const judgeResult = judgeAnswer(targetNumber, prediction.predictedNumber, prediction.confidence, "quiz");
 
-
           if (judgeResult.status === "correct") {
             if (!isMatchingRef.current) {
               isMatchingRef.current = true;
@@ -192,7 +194,13 @@ function QuizPage() {
 
               // 20ms마다 게이지를 채움 (총 3000ms = 3초 유지 필요)
               matchTimerRef.current = setInterval(() => {
-                currentProgress += (20 / 3000) * 100; //
+
+                if (!isActive) {
+                  clearInterval(matchTimerRef.current);
+                  return;
+                }
+
+                currentProgress += (20 / 3000) * 100;
                 
                 if (currentProgress >= 100) {
                   clearInterval(matchTimerRef.current);
@@ -211,8 +219,14 @@ function QuizPage() {
 
       camera = new mp.Camera(video, {
         onFrame: async () => {
-          if (!isAnswering && !quizFinished && video) {
+
+          if (!isActive || !hands || isAnswering || quizFinished || !video) return;
+
+          try {
             await hands.send({ image: video });
+          } catch (error) {
+            // 완전히 종료되기 직전에 들어온 비동기 잔여 프레임 에러는 로그를 띄우지 않고 묵인합니다.
+            if (isActive) console.error("MediaPipe Quiz send error:", error);
           }
         },
         width: 640, height: 480
@@ -220,13 +234,22 @@ function QuizPage() {
       camera.start();
     };
 
-    const timer = setTimeout(() => { init(); }, 500);
+    const timer = setTimeout(() => { 
+      if (isActive) init(); 
+    }, 500);
 
     return () => {
+      isActive = false;
       clearTimeout(timer);
       window.removeEventListener("resize", updateDimensions);
       if (camera) camera.stop();
-      if (hands) hands.close();
+      if (hands) {
+        try {
+          hands.close();
+        } catch (e) {
+          console.log("MediaPipe Quiz close buffer log:", e);
+        }
+      }
       resetMatchTimer();
     };
   }, [quizList, currentIndex, isAnswering, quizFinished]);
@@ -244,7 +267,6 @@ function QuizPage() {
           )}
         </div>
 
- 
         {matchProgress > 0 && !showSuccessText && (
           <div className="hold-progress-container">
             <p>3초간 유지하세요!</p>
