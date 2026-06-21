@@ -1,6 +1,6 @@
 const MIN_SIGN_NUMBER = 0;
 const MAX_SIGN_NUMBER = 10;
-const LOW_CONFIDENCE_THRESHOLD = 70;
+const LOW_CONFIDENCE_THRESHOLD = 90;
 const SUPPORTED_MODES = new Set(["learn", "quiz"]);
 const JUDGE_STATUS = {
   CORRECT: "correct",
