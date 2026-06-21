@@ -24,9 +24,8 @@ function LearnPage() {
 
   const isFinishedRef = useRef(false);
   
-
   const correctTimerRef = useRef(null); 
-  const isHoldingCorrectRef = useRef(false); // 현재 정답 자세를 홀딩 중인지 여부
+  const isHoldingCorrectRef = useRef(false);
 
   // 예시 사진 2초 뒤 숨기기 타이머
   const startHideTimer = () => {
@@ -40,7 +39,6 @@ function LearnPage() {
     setShowExample(true); 
     startHideTimer();
     
-    // 페이지가 바뀔 땐 홀딩 관련 상태도 완전히 리셋
     isHoldingCorrectRef.current = false;
     if (correctTimerRef.current) clearTimeout(correctTimerRef.current);
 
@@ -58,6 +56,8 @@ function LearnPage() {
   useEffect(() => {
     let camera = null;
     let hands = null;
+
+    let isActive = true; 
 
     const mp = window;
     if (!mp.Hands || !mp.Camera) {
@@ -110,7 +110,8 @@ function LearnPage() {
       });
 
       hands.onResults((results) => {
-        if (isFinishedRef.current) return;
+
+        if (!isActive || isFinishedRef.current) return;
 
         ctx.save();
         ctx.clearRect(0, 0, dimensionsRef.current.width, dimensionsRef.current.height);
@@ -154,7 +155,6 @@ function LearnPage() {
           }
 
           if (prediction.status !== "detected") {
-            // 손은 감지되었으나 올바른 포즈가 아니면 타이머 리셋
             if (isHoldingCorrectRef.current) {
               isHoldingCorrectRef.current = false;
               if (correctTimerRef.current) {
@@ -175,13 +175,10 @@ function LearnPage() {
             "learn"
           );
 
-
           if (judgeResult.status === "correct") {
             if (!isHoldingCorrectRef.current) {
-              // 처음 정답 진입 시점에만 타이머 구동 (중복 방지)
               isHoldingCorrectRef.current = true;
               
-              // 1.5초(1500ms) 동안 이 조건이 계속 유지되면 최종 정답 처리 완료
               correctTimerRef.current = setTimeout(() => {
                 isFinishedRef.current = true; 
 
@@ -197,7 +194,6 @@ function LearnPage() {
               }, 1500); 
             }
           } else {
-            // 정답 조건을 만족하지 못하는 틀린 포즈가 들어오면 타이머 파괴
             if (isHoldingCorrectRef.current) {
               isHoldingCorrectRef.current = false;
               if (correctTimerRef.current) {
@@ -212,8 +208,14 @@ function LearnPage() {
 
       camera = new mp.Camera(video, {
         onFrame: async () => {
-          if (!isFinishedRef.current && video) {
+
+          if (!isActive || !hands || isFinishedRef.current || !video) return;
+
+          try {
             await hands.send({ image: video });
+          } catch (error) {
+            // 언마운트된 후가 아닐 때(실제 에러일 때)만 로그를 출력합니다.
+            if (isActive) console.error("MediaPipe send error:", error);
           }
         },
         width: 640,
@@ -224,14 +226,23 @@ function LearnPage() {
     };
 
     const timer = setTimeout(() => {
-      init();
+      // 타이머가 돌기 전에 언마운트 되었을 경우를 대비한 방어
+      if (isActive) init();
     }, 500);
 
+
     return () => {
+      isActive = false;
       clearTimeout(timer);
       window.removeEventListener("resize", updateDimensions);
       if (camera) camera.stop();
-      if (hands) hands.close();
+      if (hands) {
+        try {
+          hands.close();
+        } catch (e) {
+          console.log("MediaPipe close buffer log:", e);
+        }
+      }
     };
 
   }, [targetNumber]);
