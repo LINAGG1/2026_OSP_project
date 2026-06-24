@@ -1,0 +1,134 @@
+.learn-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.webcam-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: black;
+  overflow: hidden;
+}
+
+.camera-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.top-left-ui {
+  position: absolute;
+  top: 30px;
+  left: 45px; 
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  color: white;
+  z-index: 10;
+  text-shadow: 0px 2px 5px rgba(0, 0, 0, 0.8);
+}
+
+.top-left-ui button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #4caf50;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: background 0.2s;
+}
+
+.top-left-ui button:hover {
+  background: #43a047;
+}
+
+.example-box {
+  position: absolute;
+  top: 110px;
+  left: 45px; 
+  z-index: 10;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.example-box img {
+  width: 280px; 
+  height: auto;
+  border-radius: 12px;
+  background-color: white; 
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  min-width: 280px; 
+}
+
+/* 두 버튼을 감싸는 Flex 가로 정렬 박스 */
+.modal div {
+  display: flex;
+  gap: 12px;           /* 버튼 사이의 간격 */
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* 공통 모달 버튼 기본 디자인 ('홈으로' 버튼에 기본 적용) */
+.modal-btn {
+  padding: 11px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  background: #eee;    /* 차분한 회색 */
+  color: #333;
+}
+
+.modal-btn:hover {
+  background: #e0e0e0;
+  transform: translateY(-1px);
+}
+
+/* '다음 숫자 학습' 버튼용 초록색 강조 스타일 */
+.modal-btn.next-btn {
+  background: #4caf50; /* 선명한 초록색 */
+  color: white;
+}
+
+.modal-btn.next-btn:hover {
+  background: #43a047;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+}

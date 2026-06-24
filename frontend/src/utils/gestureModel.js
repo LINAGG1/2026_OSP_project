@@ -3,7 +3,7 @@ import modelData from "../model_data.json";
 const HAND_LANDMARK_COUNT = 21;
 const NORMALIZED_COORDINATE_COUNT = HAND_LANDMARK_COUNT * 2;
 const K_NEIGHBORS = 10;
-const LOW_CONFIDENCE_THRESHOLD = 70;
+const LOW_CONFIDENCE_THRESHOLD = 90;
 const SUPPORTED_MODES = new Set(["learn", "quiz"]);
 const PREDICTION_STATUS = {
   DETECTED: "detected",

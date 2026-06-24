@@ -1,0 +1,168 @@
+/* 브라우저 창 전체에서 스크롤바가 생기는 것을 원천 차단 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;      /* 화면 높이를 딱 브라우저 창 크기(100%)로 고정 */
+  overflow: hidden;   /* 넘치는 콘텐츠로 인한 스크롤바 생성 방지 */
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit; 
+}
+
+/* 상하 여백을 내부 패딩으로 부드럽게 감싸고 화면 전체 영역 확보 */
+.container {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;       
+  padding: 60px 40px; /* 좌우 여백을 넓혀 여유를 줌 */
+  display: flex;
+  flex-direction: column;
+}
+
+
+.container h1 {
+  text-align: center;
+  margin-top: 20px;   
+  margin-top: 70px;  
+  margin-bottom: 80px; 
+  font-size: 36px;      
+  font-weight: 700;
+}
+
+
+.content {
+  display: flex;
+  gap: 60px;          
+  flex: 1;             
+  align-items: center; 
+  justify-content: center; 
+  max-width: 1100px;   
+  margin: 0 auto;     
+  width: 100%;
+}
+
+/* LEFT */
+.left-panel {
+  flex: 1.8;
+  padding: 20px;
+}
+
+/* 진도율 헤더 */
+.progress-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.progress-header h2 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 25px;
+}
+
+.progress-percent {
+  font-size: 25px;
+  font-weight: bold;
+  color: #4caf50;
+}
+
+/* progress bar */
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background-color: #e5e5e5;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #4caf50;
+}
+
+/* sticker board */
+.sticker-board {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.sticker {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid #4caf50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 25px;
+  background-color: white;
+  margin: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sticker.completed {
+  background-color: #4caf50;
+  color: white;
+  border-color: #4caf50;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.clear-btn {
+  width: 70px !important;
+  height: 70px !important;
+  box-sizing: border-box; 
+  padding: 0;
+  border: 3px solid #f44336; 
+  color: #f44336;             
+  font-size: 14px;            
+  font-weight: bold;
+  cursor: pointer;
+  outline: none;
+  background-color: white;
+  transition: all 0.2s ease;  
+}
+
+.clear-btn:hover {
+  background-color: #f44336; 
+  color: white;              
+}
+
+/* RIGHT */
+.right-panel {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px; /* 두 버튼 사이의 간격 */
+}
+
+.action-btn {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px;
+  font-size: 24px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  background-color: #4caf50;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #43a047;
+}
